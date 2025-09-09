@@ -48,13 +48,8 @@ DragonIP provides two main functions:
 
 ## Installation
 
-<<<<<<< HEAD
 1. Upload the `dragonip` folder to `/wp-content/plugins/`
 2. Activate the plugin through the 'Plugins' menu in WordPress
-=======
-1. Upload the `DragonIP` folder to `/wp-content/plugins/`
-2. Activate the plugin
->>>>>>> 415645646b9190569bd8a77aa41dff3d14c7a8b7
 3. Go to **Tools > DragonIP** in your admin panel
 
 ## Usage
@@ -139,7 +134,6 @@ Check WordPress error logs and plugin compatibility if you have issues.
 
 ## Technical Details
 
-<<<<<<< HEAD
 **WordPress Hooks Used:**
 - `admin_menu` - Adds admin menu page
 - `admin_init` - Handles form processing
@@ -178,22 +172,6 @@ Check WordPress error logs and plugin compatibility if you have issues.
 * Admin-only interface with confirmation requirements
 * Comprehensive input sanitization and output escaping
 * WordPress 5.0+ compatibility
-=======
-**WordPress hooks used:**
-- `admin_menu`, `admin_init`, `init`
-- `wp_insert_comment`, `wp_login`
-- `pre_comment_author_ip`
-- `register_activation_hook`
-
-**Database tables affected:**
-- `wp_comments`, `wp_usermeta`
-- `wp_wfLogins`, `wp_wfHits` (Wordfence)
-- Custom log tables with IP columns
-
-**Options stored:**
-- `dragon_ip_target_user`
-- `dragon_ip_future_enabled`
->>>>>>> 415645646b9190569bd8a77aa41dff3d14c7a8b7
 
 ## License
 
