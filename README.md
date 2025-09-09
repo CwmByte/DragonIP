@@ -1,5 +1,6 @@
 # DragonIP
 
+<<<<<<< HEAD
 **Contributors:** cwmbyte  
 **Donate link:** https://cwmbyte.com/  
 **Tags:** security, ip, privacy, admin, masking  
@@ -32,6 +33,15 @@ DragonIP provides two main functions:
 
 1. **Historical IP Masking** - Scans your database for existing IP addresses associated with admin users and replaces them with 127.0.0.1
 2. **Future IP Masking** - Intercepts and masks new IP addresses for ongoing admin activity
+=======
+**Author:** [CwmByte](https://cwmbyte.com/)  
+**Version:** 1.0  
+**License:** GPL2+  
+
+## What it does
+
+DragonIP masks admin user IP addresses in WordPress. It can change existing IP addresses in your database and automatically mask new activity going forward.
+>>>>>>> 415645646b9190569bd8a77aa41dff3d14c7a8b7
 
 ## Features
 
@@ -48,8 +58,13 @@ DragonIP provides two main functions:
 
 ## Installation
 
+<<<<<<< HEAD
 1. Upload the `dragonip` folder to `/wp-content/plugins/`
 2. Activate the plugin through the 'Plugins' menu in WordPress
+=======
+1. Upload the `DragonIP` folder to `/wp-content/plugins/`
+2. Activate the plugin
+>>>>>>> 415645646b9190569bd8a77aa41dff3d14c7a8b7
 3. Go to **Tools > DragonIP** in your admin panel
 
 ## Usage
@@ -134,6 +149,7 @@ Check WordPress error logs and plugin compatibility if you have issues.
 
 ## Technical Details
 
+<<<<<<< HEAD
 **WordPress Hooks Used:**
 - `admin_menu` - Adds admin menu page
 - `admin_init` - Handles form processing
@@ -172,6 +188,22 @@ Check WordPress error logs and plugin compatibility if you have issues.
 * Admin-only interface with confirmation requirements
 * Comprehensive input sanitization and output escaping
 * WordPress 5.0+ compatibility
+=======
+**WordPress hooks used:**
+- `admin_menu`, `admin_init`, `init`
+- `wp_insert_comment`, `wp_login`
+- `pre_comment_author_ip`
+- `register_activation_hook`
+
+**Database tables affected:**
+- `wp_comments`, `wp_usermeta`
+- `wp_wfLogins`, `wp_wfHits` (Wordfence)
+- Custom log tables with IP columns
+
+**Options stored:**
+- `dragon_ip_target_user`
+- `dragon_ip_future_enabled`
+>>>>>>> 415645646b9190569bd8a77aa41dff3d14c7a8b7
 
 ## License
 

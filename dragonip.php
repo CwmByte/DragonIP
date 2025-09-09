@@ -6,7 +6,6 @@
  * Version: 1.0
  * Author: CwmByte
  * License: GPL2+
- * Text Domain: dragonip
  */
 
 // Prevent direct access
@@ -96,8 +95,8 @@ class DragonIP {
                                 $saved_user_id = get_option('dragon_ip_target_user', $current_user_id);
                                 $saved_user = get_user_by('id', $saved_user_id);
                                 ?>
-                                <p><strong>Current User:</strong> <?php echo esc_html($current_user->user_login); ?> (ID: <?php echo esc_html($current_user_id); ?>)</p>
-                                <p><strong>Saved Target User:</strong> <?php echo $saved_user ? esc_html($saved_user->user_login) : 'None'; ?> (ID: <?php echo esc_html($saved_user_id); ?>)</p>
+                                <p><strong>Current User:</strong> <?php echo esc_html($current_user->user_login); ?> (ID: <?php echo $current_user_id; ?>)</p>
+                                <p><strong>Saved Target User:</strong> <?php echo $saved_user ? esc_html($saved_user->user_login) : 'None'; ?> (ID: <?php echo $saved_user_id; ?>)</p>
                                 <p class="description">The default user is automatically set to the current logged-in user. You can change this below.</p>
                             </td>
                         </tr>
@@ -240,18 +239,15 @@ class DragonIP {
                 </form>
             </div>
             
-            <?php 
-            // Display messages from redirects - no nonce needed for display-only parameters
-            // These are safe to display as they come from our own redirects with sanitized content
-            if (isset($_GET['message'])): ?>
+            <?php if (isset($_GET['message'])): ?>
                 <div class="notice notice-success">
-                    <p><?php echo esc_html(sanitize_text_field(wp_unslash($_GET['message']))); ?></p>
+                    <p><?php echo esc_html($_GET['message']); ?></p>
                 </div>
             <?php endif; ?>
             
             <?php if (isset($_GET['error'])): ?>
                 <div class="notice notice-error">
-                    <p><?php echo esc_html(sanitize_text_field(wp_unslash($_GET['error']))); ?></p>
+                    <p><?php echo esc_html($_GET['error']); ?></p>
                 </div>
             <?php endif; ?>
             
@@ -270,24 +266,22 @@ class DragonIP {
             return;
         }
         
-        $action = sanitize_text_field(wp_unslash($_POST['action']));
-        
-        if ($action === 'set_default_user') {
-            if (!isset($_POST['default_user_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['default_user_nonce'])), 'set_default_user')) {
+        if ($_POST['action'] === 'set_default_user') {
+            if (!wp_verify_nonce($_POST['default_user_nonce'], 'set_default_user')) {
                 wp_die('Security check failed');
             }
             $this->set_target_user();
         }
         
-        if ($action === 'mask_historical') {
-            if (!isset($_POST['mask_historical_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['mask_historical_nonce'])), 'mask_historical_action')) {
+        if ($_POST['action'] === 'mask_historical') {
+            if (!wp_verify_nonce($_POST['mask_historical_nonce'], 'mask_historical_action')) {
                 wp_die('Security check failed');
             }
             $this->mask_historical_ips();
         }
         
-        if ($action === 'toggle_future_masking') {
-            if (!isset($_POST['future_masking_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['future_masking_nonce'])), 'toggle_future_masking')) {
+        if ($_POST['action'] === 'toggle_future_masking') {
+            if (!wp_verify_nonce($_POST['future_masking_nonce'], 'toggle_future_masking')) {
                 wp_die('Security check failed');
             }
             $this->toggle_future_masking();
@@ -295,13 +289,7 @@ class DragonIP {
     }
     
     private function set_target_user() {
-        // Note: This method is called from handle_masking() which already verifies nonces
-        if (!isset($_POST['default_target_user_id'])) {
-            wp_redirect(admin_url('tools.php?page=dragon-ip&error=' . urlencode('Please select a target user.')));
-            exit;
-        }
-        
-        $target_user_id = intval(sanitize_text_field(wp_unslash($_POST['default_target_user_id'])));
+        $target_user_id = intval($_POST['default_target_user_id']);
         
         if (empty($target_user_id)) {
             wp_redirect(admin_url('tools.php?page=dragon-ip&error=' . urlencode('Please select a target user.')));
@@ -321,14 +309,13 @@ class DragonIP {
     }
     
     private function mask_historical_ips() {
-        // Note: This method is called from handle_masking() which already verifies nonces
-        if (!isset($_POST['target_user_id']) || !isset($_POST['confirm_historical'])) {
+        if (empty($_POST['target_user_id']) || !isset($_POST['confirm_historical'])) {
             wp_redirect(admin_url('tools.php?page=dragon-ip&error=' . urlencode('Please select a user and confirm the action.')));
             exit;
         }
         
-        $user_id = intval(sanitize_text_field(wp_unslash($_POST['target_user_id'])));
-        $mask_areas = isset($_POST['mask_areas']) ? array_map('sanitize_text_field', wp_unslash($_POST['mask_areas'])) : array();
+        $user_id = intval($_POST['target_user_id']);
+        $mask_areas = isset($_POST['mask_areas']) ? $_POST['mask_areas'] : array();
         
         $user = get_user_by('id', $user_id);
         if (!$user) {
@@ -363,21 +350,17 @@ class DragonIP {
                 "SELECT umeta_id, meta_key FROM {$wpdb->usermeta} 
                 WHERE user_id = %d 
                 AND (
-                    meta_key LIKE %s OR 
-                    meta_key LIKE %s OR
+                    meta_key LIKE '%_ip%' OR 
+                    meta_key LIKE '%ip_%' OR
                     meta_key = 'last_login_ip' OR
                     meta_key = 'login_ip' OR
                     meta_key = 'user_ip' OR
                     meta_key = 'registration_ip'
                 )
                 AND meta_key NOT IN ('description', 'biography', 'user_description')
-                AND meta_key NOT LIKE %s
-                AND meta_key NOT LIKE %s",
-                $user_id,
-                '%_ip%',
-                '%ip_%',
-                '%bio%',
-                '%description%'
+                AND meta_key NOT LIKE '%bio%'
+                AND meta_key NOT LIKE '%description%'",
+                $user_id
             ));
             
             if ($ip_metas && is_array($ip_metas)) {
@@ -414,37 +397,24 @@ class DragonIP {
         
         // Security Plugins (Sucuri, MalCare, All In One WP Security, Security Ninja, etc.)
         if (in_array('security_plugins', $mask_areas)) {
-            $security_tables = $wpdb->get_results($wpdb->prepare("
+            $security_tables = $wpdb->get_results("
                 SELECT TABLE_NAME, COLUMN_NAME 
                 FROM INFORMATION_SCHEMA.COLUMNS 
                 WHERE TABLE_SCHEMA = DATABASE() 
-                AND TABLE_NAME LIKE %s
-                AND (COLUMN_NAME LIKE %s OR COLUMN_NAME LIKE %s)
-                AND TABLE_NAME NOT LIKE %s
+                AND TABLE_NAME LIKE '{$wpdb->prefix}%'
+                AND (COLUMN_NAME LIKE '%ip%' OR COLUMN_NAME LIKE '%IP%')
+                AND TABLE_NAME NOT LIKE '%wf%'
                 AND (
-                    TABLE_NAME LIKE %s OR
-                    TABLE_NAME LIKE %s OR
-                    TABLE_NAME LIKE %s OR
-                    TABLE_NAME LIKE %s OR
-                    TABLE_NAME LIKE %s OR
-                    TABLE_NAME LIKE %s OR
-                    TABLE_NAME LIKE %s OR
-                    TABLE_NAME LIKE %s
+                    TABLE_NAME LIKE '%sucuri%' OR
+                    TABLE_NAME LIKE '%malcare%' OR
+                    TABLE_NAME LIKE '%aiowps%' OR
+                    TABLE_NAME LIKE '%security_ninja%' OR
+                    TABLE_NAME LIKE '%audit%' OR
+                    TABLE_NAME LIKE '%login%' OR
+                    TABLE_NAME LIKE '%firewall%' OR
+                    TABLE_NAME LIKE '%security%'
                 )
-            ", 
-                $wpdb->prefix . '%',
-                '%ip%',
-                '%IP%',
-                '%wf%',
-                '%sucuri%',
-                '%malcare%',
-                '%aiowps%',
-                '%security_ninja%',
-                '%audit%',
-                '%login%',
-                '%firewall%',
-                '%security%'
-            ), ARRAY_A);
+            ", ARRAY_A);
             
             $security_count = 0;
             foreach ($security_tables as $table_info) {
@@ -452,31 +422,31 @@ class DragonIP {
                 $column_name = $table_info['COLUMN_NAME'];
                 
                 // Check if table has user_id column
-                $has_user_id = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM %s LIKE %s", $table_name, 'user_id'));
+                $has_user_id = $wpdb->get_var("SHOW COLUMNS FROM {$table_name} LIKE 'user_id'");
                 if ($has_user_id) {
                     $security_count += $wpdb->query($wpdb->prepare(
-                        "UPDATE %s SET %s = %s WHERE user_id = %d",
-                        $table_name, $column_name, $this->masked_ip, $user_id
+                        "UPDATE {$table_name} SET {$column_name} = %s WHERE user_id = %d",
+                        $this->masked_ip, $user_id
                     ));
                 }
                 
                 // Also check for username columns
-                $has_username = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM %s LIKE %s", $table_name, '%username%'));
+                $has_username = $wpdb->get_var("SHOW COLUMNS FROM {$table_name} LIKE '%username%'");
                 if ($has_username) {
-                    $username_col = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM %s LIKE %s", $table_name, '%username%'));
+                    $username_col = $wpdb->get_var("SHOW COLUMNS FROM {$table_name} LIKE '%username%'");
                     $security_count += $wpdb->query($wpdb->prepare(
-                        "UPDATE %s SET %s = %s WHERE %s = %s",
-                        $table_name, $column_name, $this->masked_ip, $username_col, $username
+                        "UPDATE {$table_name} SET {$column_name} = %s WHERE {$username_col} = %s",
+                        $this->masked_ip, $username
                     ));
                 }
                 
                 // Check for email columns
-                $has_email = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM %s LIKE %s", $table_name, '%email%'));
+                $has_email = $wpdb->get_var("SHOW COLUMNS FROM {$table_name} LIKE '%email%'");
                 if ($has_email && $user_email) {
-                    $email_col = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM %s LIKE %s", $table_name, '%email%'));
+                    $email_col = $wpdb->get_var("SHOW COLUMNS FROM {$table_name} LIKE '%email%'");
                     $security_count += $wpdb->query($wpdb->prepare(
-                        "UPDATE %s SET %s = %s WHERE %s = %s",
-                        $table_name, $column_name, $this->masked_ip, $email_col, $user_email
+                        "UPDATE {$table_name} SET {$column_name} = %s WHERE {$email_col} = %s",
+                        $this->masked_ip, $user_email
                     ));
                 }
             }
@@ -486,19 +456,14 @@ class DragonIP {
         
         // All log tables - find any table with IP columns
         if (in_array('all_logs', $mask_areas)) {
-            $tables_with_ip = $wpdb->get_results($wpdb->prepare("
+            $tables_with_ip = $wpdb->get_results("
                 SELECT TABLE_NAME, COLUMN_NAME 
                 FROM INFORMATION_SCHEMA.COLUMNS 
                 WHERE TABLE_SCHEMA = DATABASE() 
-                AND TABLE_NAME LIKE %s
-                AND (COLUMN_NAME LIKE %s OR COLUMN_NAME LIKE %s)
-                AND TABLE_NAME NOT LIKE %s
-            ", 
-                $wpdb->prefix . '%',
-                '%ip%',
-                '%IP%',
-                '%wf%'
-            ), ARRAY_A);
+                AND TABLE_NAME LIKE '{$wpdb->prefix}%'
+                AND (COLUMN_NAME LIKE '%ip%' OR COLUMN_NAME LIKE '%IP%')
+                AND TABLE_NAME NOT LIKE '%wf%'
+            ", ARRAY_A);
             
             $log_count = 0;
             foreach ($tables_with_ip as $table_info) {
@@ -506,21 +471,21 @@ class DragonIP {
                 $column_name = $table_info['COLUMN_NAME'];
                 
                 // Check if table has user_id column
-                $has_user_id = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM %s LIKE %s", $table_name, 'user_id'));
+                $has_user_id = $wpdb->get_var("SHOW COLUMNS FROM {$table_name} LIKE 'user_id'");
                 if ($has_user_id) {
                     $log_count += $wpdb->query($wpdb->prepare(
-                        "UPDATE %s SET %s = %s WHERE user_id = %d",
-                        $table_name, $column_name, $this->masked_ip, $user_id
+                        "UPDATE {$table_name} SET {$column_name} = %s WHERE user_id = %d",
+                        $this->masked_ip, $user_id
                     ));
                 }
                 
                 // Also check for username columns
-                $has_username = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM %s LIKE %s", $table_name, '%username%'));
+                $has_username = $wpdb->get_var("SHOW COLUMNS FROM {$table_name} LIKE '%username%'");
                 if ($has_username) {
-                    $username_col = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM %s LIKE %s", $table_name, '%username%'));
+                    $username_col = $wpdb->get_var("SHOW COLUMNS FROM {$table_name} LIKE '%username%'");
                     $log_count += $wpdb->query($wpdb->prepare(
-                        "UPDATE %s SET %s = %s WHERE %s = %s",
-                        $table_name, $column_name, $this->masked_ip, $username_col, $username
+                        "UPDATE {$table_name} SET {$column_name} = %s WHERE {$username_col} = %s",
+                        $this->masked_ip, $username
                     ));
                 }
             }
@@ -537,13 +502,7 @@ class DragonIP {
     }
     
     private function toggle_future_masking() {
-        // Note: This method is called from handle_masking() which already verifies nonces
-        if (!isset($_POST['future_target_user_id'])) {
-            wp_redirect(admin_url('tools.php?page=dragon-ip&error=' . urlencode('Please select a target user.')));
-            exit;
-        }
-        
-        $target_user_id = intval(sanitize_text_field(wp_unslash($_POST['future_target_user_id'])));
+        $target_user_id = intval($_POST['future_target_user_id']);
         
         if (empty($target_user_id)) {
             wp_redirect(admin_url('tools.php?page=dragon-ip&error=' . urlencode('Please select a target user.')));
