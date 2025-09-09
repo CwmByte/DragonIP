@@ -1,6 +1,5 @@
 # DragonIP
 
-<<<<<<< HEAD
 **Contributors:** cwmbyte  
 **Donate link:** https://cwmbyte.com/  
 **Tags:** security, ip, privacy, admin, masking  
@@ -33,15 +32,6 @@ DragonIP provides two main functions:
 
 1. **Historical IP Masking** - Scans your database for existing IP addresses associated with admin users and replaces them with 127.0.0.1
 2. **Future IP Masking** - Intercepts and masks new IP addresses for ongoing admin activity
-=======
-**Author:** [CwmByte](https://cwmbyte.com/)  
-**Version:** 1.0  
-**License:** GPL2+  
-
-## What it does
-
-DragonIP masks admin user IP addresses in WordPress. It can change existing IP addresses in your database and automatically mask new activity going forward.
->>>>>>> 415645646b9190569bd8a77aa41dff3d14c7a8b7
 
 ## Features
 
