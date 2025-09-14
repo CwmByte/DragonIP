@@ -249,13 +249,13 @@ class DragonIP {
             
             <?php if (isset($_GET['message'])): ?>
                 <div class="notice notice-success">
-                    <p><?php echo esc_html($_GET['message']); ?></p>
+                    <p><?php echo esc_html(sanitize_text_field($_GET['message'])); ?></p>
                 </div>
             <?php endif; ?>
             
             <?php if (isset($_GET['error'])): ?>
                 <div class="notice notice-error">
-                    <p><?php echo esc_html($_GET['error']); ?></p>
+                    <p><?php echo esc_html(sanitize_text_field($_GET['error'])); ?></p>
                 </div>
             <?php endif; ?>
             
@@ -274,21 +274,21 @@ class DragonIP {
             return;
         }
         
-        if ($_POST['action'] === 'set_default_user') {
+        if (sanitize_text_field($_POST['action']) === 'set_default_user') {
             if (!isset($_POST['default_user_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['default_user_nonce'])), 'set_default_user')) {
                 wp_die('Security check failed');
             }
             $this->set_target_user();
         }
         
-        if ($_POST['action'] === 'mask_historical') {
+        if (sanitize_text_field($_POST['action']) === 'mask_historical') {
             if (!isset($_POST['mask_historical_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['mask_historical_nonce'])), 'mask_historical_action')) {
                 wp_die('Security check failed');
             }
             $this->mask_historical_ips();
         }
         
-        if ($_POST['action'] === 'toggle_future_masking') {
+        if (sanitize_text_field($_POST['action']) === 'toggle_future_masking') {
             if (!isset($_POST['future_masking_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['future_masking_nonce'])), 'toggle_future_masking')) {
                 wp_die('Security check failed');
             }
@@ -297,7 +297,7 @@ class DragonIP {
     }
     
     private function set_target_user() {
-        $target_user_id = intval($_POST['default_target_user_id']);
+        $target_user_id = intval(sanitize_text_field($_POST['default_target_user_id']));
         
         if (empty($target_user_id)) {
             wp_redirect(admin_url('tools.php?page=dragon-ip&error=' . urlencode('Please select a target user.')));
@@ -317,13 +317,13 @@ class DragonIP {
     }
     
     private function mask_historical_ips() {
-        if (empty($_POST['target_user_id']) || !isset($_POST['confirm_historical'])) {
+        if (empty(sanitize_text_field($_POST['target_user_id'])) || !isset($_POST['confirm_historical'])) {
             wp_redirect(admin_url('tools.php?page=dragon-ip&error=' . urlencode('Please select a user and confirm the action.')));
             exit;
         }
         
-        $user_id = intval($_POST['target_user_id']);
-        $mask_areas = isset($_POST['mask_areas']) ? $_POST['mask_areas'] : array();
+        $user_id = intval(sanitize_text_field($_POST['target_user_id']));
+        $mask_areas = isset($_POST['mask_areas']) ? array_map('sanitize_text_field', $_POST['mask_areas']) : array();
         
         $user = get_user_by('id', $user_id);
         if (!$user) {
@@ -513,7 +513,7 @@ class DragonIP {
     }
     
     private function toggle_future_masking() {
-        $target_user_id = intval($_POST['future_target_user_id']);
+        $target_user_id = intval(sanitize_text_field($_POST['future_target_user_id']));
         
         if (empty($target_user_id)) {
             wp_redirect(admin_url('tools.php?page=dragon-ip&error=' . urlencode('Please select a target user.')));
